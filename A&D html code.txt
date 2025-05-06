@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Armed and Dangerous</title>
+<style>
+  /* Reset and base */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  html, body {
+    background: #121212;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #gameContainer {
+    position: relative;
+    width: 350px;
+    height: 600px;
+    background: #20232a;
+    margin: 10px auto;
+    border: 3px solid #444c56;
+    overflow: hidden;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+  }
+  canvas {
+    background: #181a1f;
+    display: block;
+    border-radius: 8px 8px 0 0;
+    image-rendering: pixelated;
+  }
+  #uiTopRight {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    color: #eee;
+    font-size: 14px;
+    text-align: right;
+    width: 140px;
+    font-weight: 600;
+    z-index: 100;
+    user-select: none;
+  }
+  .barContainer {
+    margin: 6px 0;
+    background: #555a60;
+    border-radius: 6px;
+    height: 14px;
+    overflow: hidden;
+    width: 140px;
+  }
+  .bar {
+    height: 100%;
+    width: 100%;
+    transition: width 0.25s ease-out;
+    border-radius: 6px;
+  }
+  .bar.health {
+    background: #4caf50;
+  }
+  .bar.stamina {
+    background: #ffc107;
+  }
+  .bar.xp {
+    background: #2196f3;
+  }
+  #weaponDisplay {
+    margin-top: 2px;
+    font-size: 15px;
+    color: #f0d76b;
+  }
+  #levelDisplay {
+    margin-top: 4px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #bb86fc;
+    user-select: none;
+  }
+  /* BUTTON STYLES */
+  button {
+    cursor: pointer;
+    background: #303846;
+    border: none;
+    color: #eee;
+    padding: 12px 24px;
+    margin: 10px 0;
+    border-radius: 10px;
+    font-size: 18px;
+    transition: background-color 0.3s ease;
+    user-select:none;
+    text-shadow: 0 0 2px #333;
+    box-shadow: inset 0 4px 6px #41494f;
+  }
+  button:hover {
+    background: #4caf50;
+    color: white;
+    text-shadow: 0 0 6px #9fff88;
+  }
+  button:active {
+    background: #3a9034;
+    box-shadow: inset 0 3px 5px #2c6a1a;
+  }
+  #startScreen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #eee;
+    user-select:none;
+  }
+  #startScreen h1 {
+    font-size: 42px;
+    text-shadow:
+      0 0 10px #6b001d,
+      0 0 20px #bf005f,
+      0 0 30px #ff56a1,
+      0 0 40px #ff5cbb,
+      0 0 50px #ff89d4;
+    margin-bottom: 30px;
+  }
+  .characterSelect {
+    display: flex;
+    gap: 30px;
+  }
+  .characterOption {
+    background: #2d2f36;
+    border-radius: 12px;
+    width: 120px;
+    padding: 20px 10px;
+    cursor: pointer;
+    user-select: none;
+    box-shadow: 0 0 10px #2d2f36 inset;
+    transition: all 0.3s ease;
+  }
+  .characterOption:hover {
+    box-shadow:
+      0 0 15px #bb86fc,
+      0 0 30px #bb86fc inset;
+    background: #3a3b45;
+  }
+  .characterOption.selected {
+    box-shadow:
+      0 0 25px #bb86fc,
+      0 0 40px #bb86fc inset;
+    background: #4b437c;
+  }
+  .characterName {
+    color: #bb86fc;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 10px;
+    font-size: 18px;
+  }
+  #buffSelectionScreen {
+    position: absolute;
+    width: 350px;
+    height: 600px;
+    background: #121212ee;
+    backdrop-filter: blur(8px);
+    top: 0;
+    left: 0;
+    z-index: 999;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 60px;
+    color: #fff;
+    user-select:none;
+  }
+  #buffSelectionScreen h2 {
+    margin-bottom: 16px;
+    font-size: 24px;
+  }
+  #buffOptions {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .buffCard {
+    background: #2c2f3a;
+    width: 100px;
+    border-radius: 12px;
+    padding: 14px 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 13px;
+    box-shadow: 0 0 15px #222 inset;
+    user-select:none;
+  }
+  .buffCard:hover {
+    background: #bb86fccc;
+    color: #121212;
+  }
+  #gameOverScreen {
+    position: absolute;
+    width: 350px;
+    height: 600px;
+    background: #121212dd;
+    backdrop-filter: blur(8px);
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    user-select:none;
+  }
+  #gameOverScreen h1 {
+    font-size: 36px;
+    margin-bottom: 30px;
+    color: #ef5350;
+    text-shadow: 0 0 12px #ef5350;
+  }
+  #gameOverScreen button {
+    font-size: 18px;
+  }
+
+</style>
+</head>
+<body>
+<div id="gameContainer" role="main" aria-label="Armed and Dangerous Game Container">
+  <!-- Start Screen -->
+  <div id="startScreen" role="dialog" aria-modal="true" aria-labelledby="gameTitle" tabindex="0">
+    <h1 id="gameTitle">Armed and Dangerous</h1>
+    <div class="characterSelect" role="radiogroup" aria-label="Choose your character">
+      <div class="characterOption" tabindex="0" role="radio" aria-checked="false" id="mageOption" aria-label="Mage character">
+        <div style="width: 80px; height: 80px; margin: 0 auto; background: linear-gradient(135deg, #3f51b5, #1a237e); border-radius: 50%; position: relative;">
+          <div style="position: absolute; top: 15px; left: 15px; width: 50px; height: 10px; background: #bbdefb; border-radius: 6px;"></div>
+          <div style="position: absolute; top: 35px; left: 18px; width: 45px; height: 10px; background: #90caf9; border-radius: 10px;"></div>
+          <div style="position: absolute; top: 50px; left: 25px; width: 10px; height: 20px; background: #e3f2fd; border-radius: 4px;"></div>
+        </div>
+        <div class="characterName">Mage</div>
+      </div>
+      <div class="characterOption" tabindex="0" role="radio" aria-checked="false" id="fighterOption" aria-label="Fighter character">
+        <div style="width: 80px; height: 80px; margin: 0 auto; background: linear-gradient(135deg, #d84315, #bf360c); border-radius: 50%; position: relative;">
+          <div style="position: absolute; top: 12px; left: 30px; width: 20px; height: 50px; background: #ff7043; border-radius: 10px;"></div>
+          <div style="position: absolute; top: 10px; left: 10px; width: 15px; height: 15px; background: #efebe9; border-radius: 15px;"></div>
+          <div style="position: absolute; top: 10px; right: 10px; width: 15px; height: 15px; background: #efebe9; border-radius: 15px;"></div>
+        </div>
+        <div class="characterName">Fighter</div>
+      </div>
+    </div>
+    <button id="btnStartGame" disabled aria-disabled="true" aria-label="Start game button. Select a character to enable">Start Game</button>
+  </div>
+  <!-- Canvas for the game -->
+  <canvas id="gameCanvas" width="350" height="520" aria-label="Game playing area" tabindex="0"></canvas>
+
+  <!-- UI on top right corner -->
+  <div id="uiTopRight" aria-live="polite">
+    <div class="barContainer" aria-label="Health Bar">
+      <div id="healthBar" class="bar health" style="width: 100%;"></div>
+    </div>
+    <div class="barContainer" aria-label="Stamina Bar">
+      <div id="staminaBar" class="bar stamina" style="width: 100%;"></div>
+    </div>
+    <div class="barContainer" aria-label="Experience Bar">
+      <div id="xpBar" class="bar xp" style="width: 0%;"></div>
+    </div>
+    <div id="weaponDisplay" aria-live="polite" aria-atomic="true" aria-label="Equipped Weapon">
+      Weapon: None
+    </div>
+    <div id="levelDisplay" aria-live="polite" aria-atomic="true" aria-label="Player Level">
+      Level: 1
+    </div>
+  </div>
+
+  <!-- Buff Selection Screen -->
+  <div id="buffSelectionScreen" role="dialog" aria-modal="true" aria-label="Level Up Buff Selection">
+    <h2>Choose a Buff</h2>
+    <div id="buffOptions"></div>
+  </div>
+  <!-- Game Over Screen -->
+  <div id="gameOverScreen" role="dialog" aria-modal="true" aria-label="Game Over Screen">
+    <h1>Game Over</h1>
+    <button id="btnRestartGame" aria-label="Restart game">Restart Game</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // CONSTANTS & PARAMETERS
+  const CANVAS_WIDTH = 350;
+  const CANVAS_HEIGHT = 520;
+  const UI_HEIGHT = 80; // For bars section approx
+
+  const PLAYER_SIZE = 28;
+  const PLAYER_SPEED = 3;
+  const BASE_STAMINA_MAX = 100;
+  const BASE_HEALTH_MAX = 100;
+  const BASE_XP_MAX = 100;
+  const SPIN_BASE_RANGE = 40;
+  const SPIN_BASE_DAMAGE = 5;
+  const SPIN_BASE_SPEED = 0.15; // radians per frame
+  
+  const ENEMY_SIZE = 24;
+  const ENEMY_BASE_SPEED = 1;
+  const ENEMY_BASE_HEALTH = 20;
+
+  const LEVEL_XP_BASE = 100;
+  const XP_SCALE = 1.25;
+  const ENEMY_SPAWN_BASE = 3; // base number of enemies spawned each wave
+  const ENEMY_SPAWN_SCALE = 1.2;
+
+  const BUFFS = [
+    {id: 'damage_increase', name: 'Damage +10%', desc: 'Increase your spin and weapon damage by 10%', apply(player) { player.damageMultiplier *= 1.1; }},
+    {id: 'attack_speed', name: 'Attack Speed +10%', desc: 'Increase spin attack speed by 10%', apply(player) { player.spinSpeedMultiplier *= 1.1; }},
+    {id: 'health_regen', name: 'Health Regen', desc: 'Regenerate 1 health per second', apply(player) { player.healthRegen += 1; }},
+    {id: 'aoe_increase', name: 'AOE +10%', desc: 'Increase spin attack range by 10%', apply(player) { player.spinRangeMultiplier *= 1.1; }},
+    {id: 'stamina_regen', name: 'Stamina Regen', desc: 'Regenerate 3 stamina per second', apply(player) { player.staminaRegen += 3; }},
+    {id: 'shield', name: 'Shield', desc: 'Gain a shield that absorbs damage', apply(player) { player.hasShield = true; }},
+    {id: 'crit_chance', name: 'Crit Chance +10%', desc: '10% chance to deal double damage', apply(player) { player.critChance += 0.1; }},
+    {id: 'movement_speed', name: 'Move Speed +10%', desc: 'Increase your movement speed by 10%', apply(player) { player.speedMultiplier *= 1.1; }},
+    {id: 'fireball_boost', name: 'Fireball Boost', desc: 'Fireball deals splash damage and moves faster', apply(player) { if(player.character === 'mage') player.fireballBuff = true; }},
+    {id: 'axe_boost', name: 'Axe Spin', desc: 'Fighter axethrow also spins like attack', apply(player) { if(player.character === 'fighter') player.axeSpin = true; }},
+    {id: 'health_max', name: 'Max Health +15', desc: 'Increase maximum health by 15', apply(player) { player.maxHealth += 15; player.health += 15; }},
+    {id: 'cooldown_reduction', name: 'Cooldown Reduction', desc: 'Reduce cooldown of special abilities by 20%', apply(player) { player.cdMultiplier *= 0.8; }},
+  ];
+
+  // Helper functions
+  function clamp(val, min, max) { return val < min ? min : val > max ? max : val; }
+  function distance(x1, y1, x2, y2) { return Math.hypot(x2 - x1, y2 - y1); }
+  function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+  function chooseRandom(array) { return array[Math.floor(Math.random() * array.length)];}
+  function randomChoiceCount(array, count) {
+    const copy = array.slice();
+    const output = [];
+    for (let i = 0; i < count; i++) {
+      if (copy.length === 0) break;
+      const idx = Math.floor(Math.random() * copy.length);
+      output.push(copy[idx]);
+      copy.splice(idx, 1);
+    }
+    return output;
+  }
+
+  // MAIN GAME OBJECTS AND STATE
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const startScreen = document.getElementById('startScreen');
+  const btnStartGame = document.getElementById('btnStartGame');
+  const mageOption = document.getElementById('mageOption');
+  const fighterOption = document.getElementById('fighterOption');
+  const buffSelectionScreen = document.getElementById('buffSelectionScreen');
+  const buffOptionsContainer = document.getElementById('buffOptions');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const btnRestartGame = document.getElementById('btnRestartGame');
+
+  const healthBar = document.getElementById('healthBar');
+  const staminaBar = document.getElementById('staminaBar');
+  const xpBar = document.getElementById('xpBar');
+  const weaponDisplay = document.getElementById('weaponDisplay');
+  const levelDisplay = document.getElementById('levelDisplay');
+
+  let keysDown = {};
+
+  // Player class
+  
+  class Player {
+    constructor(character) {
+      this.character = character; // 'mage' or 'fighter'
+      this.x = CANVAS_WIDTH / 2;
+      this.y = (CANVAS_HEIGHT - UI_HEIGHT) / 2 + UI_HEIGHT/2;
+      this.radius = PLAYER_SIZE/2;
+      
+      this.speed = PLAYER_SPEED;
+      this.speedMultiplier = 1;
+
+      this.maxHealth = BASE_HEALTH_MAX;
+      this.health = this.maxHealth;
+      this.healthRegen = 0;
+
+      this.maxStamina = BASE_STAMINA_MAX;
+      this.stamina = this.maxStamina;
+      this.staminaRegen = 0;
+
+      this.xp = 0;
+      this.level = 1;
+      this.xpToLevel = LEVEL_XP_BASE;
+
+      this.damageMultiplier = 1;
+      this.spinSpeedMultiplier = 1;
+      this.spinRangeMultiplier = 1;
+      this.cdMultiplier = 1;
+
+      this.critChance = 0;
+
+      this.spinAngle = 0;
+      this.spinDamage = SPIN_BASE_DAMAGE;
+      this.spinSpeed = SPIN_BASE_SPEED;
+      this.spinRange = SPIN_BASE_RANGE;
+
+      this.hasShield = false;
+
+      // For special abilities & cooldowns
+      this.abilityCooldowns = {
+        primary: 0,
+        secondary: 0,
+      };
+      
+      // Buff flags for character specific effects
+      this.fireballBuff = false;
+      this.axeSpin = false;
+
+      this.equippedWeapon = 'Spinning Attack';
+
+      // Projectiles collection
+      this.projectiles = [];
+
+      // Cooldowns in milliseconds for abilities
+      if(this.character === 'mage') {
+        this.cooldowns = { iceShard: 1500, fireball: 2500 };
+        this.abilityCooldowns.iceShard = 0;
+        this.abilityCooldowns.fireball = 0;
+      } else {
+        this.cooldowns = { axeThrow: 1800, daggerThrow: 1000 };
+        this.abilityCooldowns.axeThrow = 0;
+        this.abilityCooldowns.daggerThrow = 0;
+      }
+    }
+
+    move(delta) {
+      let moveSpeed = this.speed * this.speedMultiplier;
+      if (keysDown['ArrowUp'] || keysDown['w']) { this.y -= moveSpeed; }
+      if (keysDown['ArrowDown'] || keysDown['s']) { this.y += moveSpeed; }
+      if (keysDown['ArrowLeft'] || keysDown['a']) { this.x -= moveSpeed; }
+      if (keysDown['ArrowRight'] || keysDown['d']) { this.x += moveSpeed; }
+      // Clamp to canvas bounds
+      this.x = clamp(this.x, this.radius, CANVAS_WIDTH - this.radius);
+      this.y = clamp(this.y, UI_HEIGHT + this.radius, CANVAS_HEIGHT - this.radius);
+    }
+
+    regen(delta) {
+      if(this.health < this.maxHealth) {
+        this.health += (this.healthRegen * (delta / 1000));
+        this.health = clamp(this.health, 0, this.maxHealth);
+      }
+      if(this.stamina < this.maxStamina) {
+        this.stamina += (this.staminaRegen * (delta / 1000));
+        this.stamina = clamp(this.stamina, 0, this.maxStamina);
+      }
+    }
+    
+    levelUp() {
+      this.level++;
+      this.xp = 0;
+      this.xpToLevel = Math.floor(this.xpToLevel * XP_SCALE);
+      // Increase spin attack parameters
+      this.spinDamage += 2;
+      this.spinSpeed += 0.01;
+      this.spinRange += 2;
+    }
+
+    addXP(amount) {
+      this.xp += amount;
+      if(this.xp >= this.xpToLevel) {
+        return true; // level up triggered
+      }
+      return false;
+    }
+
+    updateSpin(delta) {
+      this.spinAngle += this.spinSpeed * this.spinSpeedMultiplier * delta * 0.06; // scale speed with delta ms
+      if(this.spinAngle > Math.PI * 2) this.spinAngle -= Math.PI * 2;
+    }
+
+    draw(ctx) {
+      // Draw player circle body
+      const cx = this.x;
+      const cy = this.y;
+
+      // Main body
+      ctx.fillStyle = this.character === 'mage' ? '#3f51b5' : '#d84315';
+      ctx.beginPath();
+      ctx.arc(cx, cy, this.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Highlight circle
+      ctx.strokeStyle = this.character === 'mage' ? '#90caf9' : '#ff7043';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, this.radius - 3, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Additional decoration
+      ctx.fillStyle = this.character === 'mage' ? '#bbdefb' : '#efebe9';
+      if(this.character === 'mage') {
+        // Mage: two lines as magic glyph
+        ctx.beginPath();
+        ctx.moveTo(cx - 8, cy);
+        ctx.lineTo(cx + 8, cy);
+        ctx.moveTo(cx, cy - 10);
+        ctx.lineTo(cx, cy + 10);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#bbdefb';
+        ctx.stroke();
+      } else {
+        // Fighter: sword symbol
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 10);
+        ctx.lineTo(cx, cy + 10);
+        ctx.moveTo(cx - 8, cy + 8);
+        ctx.lineTo(cx + 8, cy + 8);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#efebe9';
+        ctx.stroke();
+      }
+      // Shield Overlay if active
+      if(this.hasShield) {
+        ctx.strokeStyle = '#81d4fa';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, this.radius + 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    drawSpinAttack(ctx) {
+      // Draw spinning attack ring of damage dealing objects
+      const cx = this.x;
+      const cy = this.y;
+      const damage = this.spinDamage * this.damageMultiplier;
+      const range = this.spinRange * this.spinRangeMultiplier;
+      const parts = 6;
+      const radius = range;
+      const anglePer = (Math.PI * 2) / parts;
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+
+      for(let i=0; i<parts; i++) {
+        const angle = this.spinAngle + i * anglePer;
+        const sx = cx + Math.cos(angle) * radius;
+        const sy = cy + Math.sin(angle) * radius;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw damage number overlay for polish
+        ctx.fillStyle = '#bb86fc';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(Math.round(damage), sx, sy + 4);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      }
+    }
+
+    shootProjectiles(delta) {
+      // Update cooldowns
+      const now = performance.now();
+      // For mage
+      if(this.character === 'mage') {
+        if(this.abilityCooldowns.iceShard <= 0) {
+          this.abilityCooldowns.iceShard = this.cooldowns.iceShard * this.cdMultiplier;
+          // shoot ice shard projectile forward
+          this.projectiles.push(new Projectile(this.x, this.y, 0, -5, 'iceShard', this));
+        }
+        if(this.abilityCooldowns.fireball <= 0) {
+          this.abilityCooldowns.fireball = this.cooldowns.fireball * this.cdMultiplier;
+          // shoot fireball slightly angled to the right
+          this.projectiles.push(new Projectile(this.x, this.y, 3, -4, 'fireball', this));
+          // and another angled to the left
+          this.projectiles.push(new Projectile(this.x, this.y, -3, -4, 'fireball', this));
+        }
+      } else {
+        if(this.abilityCooldowns.axeThrow <= 0) {
+          this.abilityCooldowns.axeThrow = this.cooldowns.axeThrow * this.cdMultiplier;
+          // axe throw forward
+          this.projectiles.push(new Projectile(this.x, this.y, 0, -6, 'axeThrow', this, this.axeSpin));
+        }
+        if(this.abilityCooldowns.daggerThrow <= 0) {
+          this.abilityCooldowns.daggerThrow = this.cooldowns.daggerThrow * this.cdMultiplier;
+          // dagger throw in 3 directions in front (left, center, right)
+          this.projectiles.push(new Projectile(this.x, this.y, 0, -8, 'daggerThrow', this));
+          this.projectiles.push(new Projectile(this.x, this.y, 3, -7, 'daggerThrow', this));
+          this.projectiles.push(new Projectile(this.x, this.y, -3, -7, 'daggerThrow', this));
+        }
+      }
+      // reduce cooldowns for abilities
+      this.abilityCooldowns.iceShard = Math.max(0, this.abilityCooldowns.iceShard - delta);
+      this.abilityCooldowns.fireball = Math.max(0, this.abilityCooldowns.fireball - delta);
+      this.abilityCooldowns.axeThrow = Math.max(0, this.abilityCooldowns.axeThrow - delta);
+      this.abilityCooldowns.daggerThrow = Math.max(0, this.abilityCooldowns.daggerThrow - delta);
+    }
+  }
+
+  // Projectile Class
+  class Projectile {
+    constructor(x, y, vx, vy, type, owner, wheelSpin = false) {
+      this.x = x;
+      this.y = y;
+      this.vx = vx;
+      this.vy = vy;
+      this.type = type;
+      this.owner = owner;
+      this.radius = 8;
+      this.speed = Math.sqrt(vx*vx + vy*vy);
+      this.damage = 10 * owner.damageMultiplier;
+      this.cooldownSpin = wheelSpin;  // for Fighter axeSpin buff to have spinning axe flies
+      this.life = 2000; // lifespan in ms
+      this.age = 0;
+    }
+
+    update(delta) {
+      this.x += this.vx;
+      this.y += this.vy;
+
+      if(this.cooldownSpin) {
+        // rotate around owner player
+        const speed = 0.1;
+        let angle = Math.atan2(this.y - this.owner.y, this.x - this.owner.x);
+        angle += speed * delta * 0.01;
+        const dist = distance(this.owner.x, this.owner.y, this.x, this.y);
+        this.x = this.owner.x + Math.cos(angle) * dist;
+        this.y = this.owner.y + Math.sin(angle) * dist;
+      }
+      this.age += delta;
+    }
+
+    isExpired() {
+      return this.age > this.life || this.x < 0 || this.x > CANVAS_WIDTH || this.y < UI_HEIGHT || this.y > CANVAS_HEIGHT;
+    }
+
+    draw(ctx) {
+      ctx.save();
+      ctx.translate(this.x, this.y);
+      if(this.type === 'iceShard') {
+        ctx.fillStyle = '#81d4fa';
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(6, 10);
+        ctx.lineTo(-6, 10);
+        ctx.closePath();
+        ctx.fill();
+      } else if(this.type === 'fireball') {
+        ctx.fillStyle = '#ff5722';
+        ctx.shadowColor = '#ffccbc';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      } else if(this.type === 'axeThrow') {
+        ctx.fillStyle = '#a1887f';
+        ctx.beginPath();
+        ctx.rect(-4, -12, 8, 24);
+        ctx.fill();
+        ctx.fillStyle = '#6d4c41';
+        ctx.fillRect(-2, -10, 4, 20);
+      } else if(this.type === 'daggerThrow') {
+        ctx.fillStyle = '#b0bec5';
+        ctx.beginPath();
+        ctx.moveTo(0, -10);
+        ctx.lineTo(3, 10);
+        ctx.lineTo(-3, 10);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  // Enemy class
+  class Enemy {
+    constructor(type, level) {
+      this.type = type; // 1...5
+      this.level = level;
+      this.radius = ENEMY_SIZE/2;
+      this.speed = ENEMY_BASE_SPEED;
+      this.healthMax = ENEMY_BASE_HEALTH;
+      this.health = this.healthMax;
+      this.x = randomInt(this.radius, CANVAS_WIDTH - this.radius);
+      this.y = randomInt(UI_HEIGHT + this.radius, CANVAS_HEIGHT - this.radius);
+      this.damage = 5;
+      this.state = 'idle';
+
+      // Customize enemy stats and behaviors based on type
+      switch(type) {
+        case 1: // Basic
+          this.speed = 1 + level * 0.1;
+          this.healthMax = 20 + level * 8;
+          this.health = this.healthMax;
+          this.damage = 6 + level * 1;
+          break;
+        case 2: // Fast
+          this.speed = 2 + level * 0.2;
+          this.healthMax = 12 + level * 6;
+          this.health = this.healthMax;
+          this.damage = 5 + level * 1;
+          break;
+        case 3: // Tank
+          this.speed = 0.8 + level * 0.05;
+          this.healthMax = 50 + level * 20;
+          this.health = this.healthMax;
+          this.damage = 8 + level * 2;
+          break;
+        case 4: // Ranged
+          this.speed = 1 + level * 0.1;
+          this.healthMax = 18 + level * 7;
+          this.health = this.healthMax;
+          this.damage = 5 + level * 2;
+          this.attackCooldown = 1500; // ranged attack cooldown
+          this.currentCooldown = 0;
+          break;
+        case 5: // Boss
+          this.speed = 1 + level * 0.1;
+          this.healthMax = 200 + level * 80;
+          this.health = this.healthMax;
+          this.damage = 15 + level * 4;
+          break;
+      }
+    }
+
+    isAlive() {
+      return this.health > 0;
+    }
+
+    takeDamage(amount) {
+      this.health -= amount;
+      return this.health <= 0;
+    }
+
+    moveTowards(x, y) {
+      let dx = x - this.x;
+      let dy = y - this.y;
+      let dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist === 0) return;
+      const moveDist = Math.min(dist, this.speed);
+      this.x += (dx / dist) * moveDist;
+      this.y += (dy / dist) * moveDist;
+      this.x = clamp(this.x, this.radius, CANVAS_WIDTH - this.radius);
+      this.y = clamp(this.y, UI_HEIGHT + this.radius, CANVAS_HEIGHT - this.radius);
+    }
+
+    update(delta, player) {
+      if(!this.isAlive()) return;
+
+      if(this.type === 4) {
+        // Ranged enemy attempts to maintain distance and shoot
+        const distToPlayer = distance(this.x, this.y, player.x, player.y);
+        if(distToPlayer > 120) {
+          this.moveTowards(player.x, player.y);
+        } else if(distToPlayer < 80) {
+          // Move away a bit
+          let dx = this.x - player.x;
+          let dy = this.y - player.y;
+          let dist = Math.sqrt(dx*dx + dy*dy);
+          if(dist > 0) {
+            this.x += (dx / dist) * this.speed;
+            this.y += (dy / dist) * this.speed;
+          }
+        }
+        // Attack cooldown
+        this.currentCooldown -= delta;
+        if(this.currentCooldown <= 0) {
+          this.currentCooldown = this.attackCooldown;
+          // Shoot a projectile toward player - for simplicity, instant hit in this demo (could be extended)
+          player.health -= this.damage * 0.5; // partial damage; ranged attack
+          if(player.health < 0) player.health = 0;
+        }
+      } else {
+        // Other enemies move closer to player
+        this.moveTowards(player.x, player.y);
+      }
+    }
+
+    draw(ctx) {
+      if(!this.isAlive()) return;
+      // Draw enemy shapes, different by type
+      let cx = this.x;
+      let cy = this.y;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(cx, cy + this.radius - 3, this.radius - 4, (this.radius - 4)/2, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body
+      switch(this.type) {
+        case 1: // Basic enemy: red circle
+          ctx.fillStyle = '#ef5350';
+          ctx.beginPath();
+          ctx.arc(cx, cy, this.radius, 0, Math.PI*2);
+          ctx.fill();
+          break;
+        case 2: // Fast enemy: bright orange with star spikes
+          ctx.fillStyle = '#ffa726';
+          ctx.beginPath();
+          ctx.arc(cx, cy, this.radius, 0, Math.PI*2);
+          ctx.fill();
+          // star spikes
+          ctx.strokeStyle = '#ffb74d';
+          for(let i=0; i<8; i++) {
+            const angle = Math.PI*2 * (i/8);
+            ctx.beginPath();
+            ctx.moveTo(cx + Math.cos(angle)*(this.radius-2), cy + Math.sin(angle)*(this.radius-2));
+            ctx.lineTo(cx + Math.cos(angle)*(this.radius+6), cy + Math.sin(angle)*(this.radius+6));
+            ctx.stroke();
+          }
+          break;
+        case 3: // Tank: big dark maroon rectangle with spikes
+          ctx.fillStyle = '#6d4c41';
+          ctx.beginPath();
+          ctx.rect(cx - this.radius, cy - this.radius, this.radius*2, this.radius*1.4);
+          ctx.fill();
+          // spikes
+          ctx.strokeStyle = '#5d4037';
+          for(let i=0; i<4; i++) {
+            ctx.beginPath();
+            ctx.moveTo(cx - this.radius + i*12, cy - this.radius);
+            ctx.lineTo(cx - this.radius + i*12 + 6, cy - this.radius - 8);
+            ctx.lineTo(cx - this.radius + i*12 + 12, cy - this.radius);
+            ctx.stroke();
+          }
+          break;
+        case 4: // Ranged enemy: teal color with bow shape
+          ctx.fillStyle = '#26a69a';
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, this.radius+4, this.radius, 0, 0, Math.PI*2);
+          ctx.fill();
+          ctx.strokeStyle = '#004d40';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(cx - this.radius, cy);
+          ctx.lineTo(cx + this.radius, cy);
+          ctx.stroke();
+          ctx.lineWidth = 1;
+          break;
+        case 5: // Boss: purple big octagon
+          ctx.fillStyle = '#7e57c2';
+          ctx.beginPath();
+          const sides = 8;
+          let outer = this.radius + 12;
+          for(let i=0; i<=sides; i++) {
+            const angle = i*(2*Math.PI/sides) - Math.PI/2;
+            let px = cx + Math.cos(angle)*outer;
+            let py = cy + Math.sin(angle)*outer;
+            if(i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.fill();
+          break;
+      }
+
+      // Health bar above enemy
+      if(this.health < this.healthMax) {
+        const barWidth = this.radius * 2;
+        const barHeight = 4;
+        const healthRatio = this.health / this.healthMax;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(cx - this.radius, cy - this.radius - 10, barWidth, barHeight);
+        ctx.fillStyle = '#4caf50';
+        ctx.fillRect(cx - this.radius + 1, cy - this.radius - 9, (barWidth-2)*healthRatio, barHeight-2);
+      }
+    }
+  }
+
+  // Game state and variables
+  let currentScreen = 'start'; // 'start', 'playing', 'buffSelection', 'gameOver'
+  let player = null;
+  let enemies = [];
+  let lastTime = 0;
+  let accumXP = 0;
+  let levelUpTriggered = false;
+  let buffsSelected = [];
+  let chosenBuffs = [];
+  let buffsAvailable = [...BUFFS];
+  let enemiesToSpawn = ENEMY_SPAWN_BASE;
+  let enemySpawnTimer = 0;
+  const enemySpawnInterval = 3500; // ms
+  let gameOver = false;
+
+  // Event listeners
+
+  mageOption.addEventListener('click', () => {
+    selectCharacter('mage');
+  });
+  fighterOption.addEventListener('click', () => {
+    selectCharacter('fighter');
+  });
+
+  mageOption.addEventListener('keydown', e => {
+    if(e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      selectCharacter('mage');
+      btnStartGame.focus();
+    }
+  });
+  fighterOption.addEventListener('keydown', e => {
+    if(e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      selectCharacter('fighter');
+      btnStartGame.focus();
+    }
+  });
+
+  btnStartGame.addEventListener('click', () => {
+    if(player) {
+      startGame();
+    }
+  });
+
+  btnRestartGame.addEventListener('click', () => {
+    resetGame();
+  });
+
+  document.addEventListener('keydown', e => {
+    keysDown[e.key.toLowerCase()] = true;
+  });
+  document.addEventListener('keyup', e => {
+    keysDown[e.key.toLowerCase()] = false;
+  });
+
+  // Character selection handler
+  function selectCharacter(char) {
+    if(char === 'mage') {
+      player = new Player('mage');
+      mageOption.classList.add('selected');
+      fighterOption.classList.remove('selected');
+      mageOption.setAttribute('aria-checked', 'true');
+      fighterOption.setAttribute('aria-checked', 'false');
+    } else {
+      player = new Player('fighter');
+      fighterOption.classList.add('selected');
+      mageOption.classList.remove('selected');
+      fighterOption.setAttribute('aria-checked', 'true');
+      mageOption.setAttribute('aria-checked', 'false');
+    }
+    btnStartGame.disabled = false;
+    btnStartGame.setAttribute('aria-disabled', 'false');
+  }
+
+  // Start the game from selection
+  function startGame() {
+    startScreen.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    buffSelectionScreen.style.display = 'none';
+    currentScreen = 'playing';
+    enemies = [];
+    buffsSelected = [];
+    chosenBuffs = [];
+    buffsAvailable = [...BUFFS];
+    enemySpawnTimer = 0;
+    enemiesToSpawn = ENEMY_SPAWN_BASE;
+    gameOver = false;
+    lastTime = performance.now();
+    updateUI();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Reset game back to start screen
+  function resetGame() {
+    startScreen.style.display = 'flex';
+    gameOverScreen.style.display = 'none';
+    buffSelectionScreen.style.display = 'none';
+    currentScreen = 'start';
+    player = null;
+    enemies = [];
+    buffOptionsContainer.innerHTML = '';
+    btnStartGame.disabled = true;
+    btnStartGame.setAttribute('aria-disabled', 'true');
+    mageOption.classList.remove('selected');
+    fighterOption.classList.remove('selected');
+    mageOption.setAttribute('aria-checked', 'false');
+    fighterOption.setAttribute('aria-checked', 'false');
+    updateUI();
+  }
+
+  // Spawn enemies around edges randomly
+  function spawnEnemy(level) {
+    const enemyType = randomInt(1, 5);
+    const enemy = new Enemy(enemyType, level);
+    // Spawn on top or bottom edges with random x
+    const edge = Math.random() < 0.5 ? 'top' : 'bottom';
+    if(edge === 'top') {
+      enemy.y = UI_HEIGHT + enemy.radius;
+      enemy.x = randomInt(enemy.radius, CANVAS_WIDTH - enemy.radius);
+    } else {
+      enemy.y = CANVAS_HEIGHT - enemy.radius;
+      enemy.x = randomInt(enemy.radius, CANVAS_WIDTH - enemy.radius);
+    }
+    return enemy;
+  }
+
+  // Game loop
+  function gameLoop(timestamp) {
+    if(currentScreen !== 'playing') return;
+    let delta = timestamp - lastTime;
+    lastTime = timestamp;
+
+    // Update
+    update(delta);
+
+    // Draw
+    draw();
+
+    if(!gameOver) {
+      requestAnimationFrame(gameLoop);
+    } else {
+      showGameOver();
+    }
+  }
+
+  // Update function
+  function update(delta) {
+    if(!player || gameOver) return;
+
+    // Update player
+    player.move(delta);
+    player.regen(delta);
+    player.updateSpin(delta);
+    player.shootProjectiles(delta);
+
+    // Update projectiles
+    for(let i=player.projectiles.length -1; i>=0; i--) {
+      const p = player.projectiles[i];
+      p.update(delta);
+      if(p.isExpired()) {
+        player.projectiles.splice(i,1);
+      }
+    }
+
+    // Update enemies
+    enemies.forEach(enemy => enemy.update(delta, player));
+
+    // Check collision: spin attack damaging enemies
+    damageEnemiesInSpin();
+
+    // Check collision: projectiles damaging enemies
+    damageEnemiesByProjectiles();
+
+    // Remove dead enemies and add XP
+    let xpGained = 0;
+    enemies = enemies.filter(enemy => {
+      if(!enemy.isAlive()) {
+        xpGained += 15 + enemy.level * 5;
+        return false;
+      }
+      return true;
+    });
+
+    // Add XP and check level up
+    if(xpGained > 0 && player) {
+      const leveled = player.addXP(xpGained);
+      if(leveled) {
+        levelUpTriggered = true;
+        showBuffSelection();
+      }
+    }
+
+    // Spawn enemies gradually
+    enemySpawnTimer += delta;
+    if(enemySpawnTimer > enemySpawnInterval && !levelUpTriggered) {
+      enemySpawnTimer = 0;
+      // Increase number of enemies spawned proportional to level
+      const countToSpawn = Math.ceil(enemiesToSpawn * (1 + 0.05 * player.level));
+      for(let i=0; i<countToSpawn; i++) {
+        enemies.push(spawnEnemy(player.level));
+      }
+    }
+
+    if(levelUpTriggered) {
+      // Freeze game update except buff selection
+      return;
+    }
+
+    // Check player death
+    if(player.health <= 0) {
+      gameOver = true;
+      currentScreen = 'gameOver';
+    }
+
+    updateUI();
+  }
+
+  // Damage enemies with spin
+  function damageEnemiesInSpin() {
+    if(!player) return;
+    const cx = player.x;
+    const cy = player.y;
+    const damage = player.spinDamage * player.damageMultiplier;
+    const range = player.spinRange * player.spinRangeMultiplier;
+    const parts = 6;
+    const anglePer = (Math.PI * 2) / parts;
+    for(let enemy of enemies) {
+      if(!enemy.isAlive()) continue;
+      for(let i=0; i<parts; i++) {
+        const angle = player.spinAngle + i * anglePer;
+        const sx = cx + Math.cos(angle) * range;
+        const sy = cy + Math.sin(angle) * range;
+        if(distance(enemy.x, enemy.y, sx, sy) < enemy.radius + 8) {
+          // damage enemy
+          if(player.critChance > 0 && Math.random() < player.critChance) {
+            enemy.takeDamage(damage * 2);
+          } else {
+            enemy.takeDamage(damage);
+          }
+        }
+      }
+    }
+  }
+
+  // Damage enemies with projectiles
+  function damageEnemiesByProjectiles() {
+    if(!player) return;
+    for(let projectile of player.projectiles) {
+      if(projectile.isExpired()) continue;
+      for(let enemy of enemies) {
+        if(!enemy.isAlive()) continue;
+        if(distance(projectile.x, projectile.y, enemy.x, enemy.y) < enemy.radius + projectile.radius) {
+          // Damage depends on projectile type
+          let dmg = projectile.damage;
+          switch(projectile.type) {
+            case 'iceShard':
+              dmg *= 0.8;
+              enemy.takeDamage(dmg);
+              // Slow enemy speed for short duration
+              enemy.speed *= 0.6;
+              setTimeout(() => enemy.speed /= 0.6, 800);
+              break;
+            case 'fireball':
+              // Fireball does splash damage
+              enemy.takeDamage(dmg);
+              // splash to nearby enemies
+              for(let other of enemies) {
+                if(other !== enemy && distance(other.x, other.y, projectile.x, projectile.y) < 30) {
+                  other.takeDamage(dmg * 0.5);
+                }
+              }
+              break;
+            case 'axeThrow':
+              enemy.takeDamage(dmg);
+              break;
+            case 'daggerThrow':
+              enemy.takeDamage(dmg);
+              break;
+          }
+          projectile.age = projectile.life + 1; // expire projectile
+          break;
+        }
+      }
+    }
+  }
+
+  // Draw function
+  function draw() {
+    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    if(!player) return;
+
+    player.drawSpinAttack(ctx);
+
+    // Draw projectiles
+    player.projectiles.forEach(p => p.draw(ctx));
+
+    // Draw player last so it overlaps
+    player.draw(ctx);
+
+    // Draw enemies
+    enemies.forEach(enemy => enemy.draw(ctx));
+
+    // Draw stamina indicator (optional) - Circle around player
+    let staminaRatio = player.stamina / player.maxStamina;
+    ctx.strokeStyle = 'rgba(255, 193, 7, 0.5)';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, PLAYER_SIZE/2 + 12, -Math.PI/2, -Math.PI/2 + staminaRatio * Math.PI * 2);
+    ctx.stroke();
+  }
+
+  // UI Update
+  function updateUI() {
+    if(!player) {
+      healthBar.style.width = '0%';
+      staminaBar.style.width = '0%';
+      xpBar.style.width = '0%';
+      weaponDisplay.textContent = 'Weapon: None';
+      levelDisplay.textContent = 'Level: 0';
+      return;
+    }
+    healthBar.style.width = ((player.health / player.maxHealth) * 100) + '%';
+    staminaBar.style.width = ((player.stamina / player.maxStamina) * 100) + '%';
+    xpBar.style.width = ((player.xp / player.xpToLevel) * 100) + '%';
+    weaponDisplay.textContent = 'Weapon: ' + player.equippedWeapon;
+    levelDisplay.textContent = 'Level: ' + player.level;
+  }
+
+  // Show buff selection with 3 random buffs excluding chosen
+  function showBuffSelection() {
+    currentScreen = 'buffSelection';
+    buffSelectionScreen.style.display = 'flex';
+    // Select 3 random buffs not chosen
+    const possibleBuffs = buffsAvailable.filter(b => !chosenBuffs.find(cb => cb.id === b.id));
+    let buffsToShow = randomChoiceCount(possibleBuffs.length >= 3 ? possibleBuffs : buffsAvailable, 3);
+    buffOptionsContainer.innerHTML = '';
+    for(let buff of buffsToShow) {
+      const card = document.createElement('div');
+      card.className = 'buffCard';
+      card.tabIndex = 0;
+      card.setAttribute('aria-label', buff.name + '. ' + buff.desc);
+      card.textContent = buff.name;
+      card.title = buff.desc;
+      card.addEventListener('click', () => {
+        pickBuff(buff);
+      });
+      card.addEventListener('keydown', e => {
+        if(e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          pickBuff(buff);
+        }
+      });
+      buffOptionsContainer.appendChild(card);
+    }
+    buffSelectionScreen.focus();
+  }
+
+  // Apply chosen buff
+  function pickBuff(buff) {
+    chosenBuffs.push(buff);
+    buff.apply(player);
+
+    buffSelectionScreen.style.display = 'none';
+    currentScreen = 'playing';
+
+    // After buff, level player up officially
+    player.levelUp();
+
+    // Increase enemies to spawn as level increase
+    enemiesToSpawn *= 1.1;
+
+    // Resume game loop
+    lastTime = performance.now();
+    levelUpTriggered = false;
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Show game over screen
+  function showGameOver() {
+    buffSelectionScreen.style.display = 'none';
+    gameOverScreen.style.display = 'flex';
+    healthBar.style.width = '0%';
+    staminaBar.style.width = '0%';
+    xpBar.style.width = '0%';
+  }
+
+  // Accessibility: Keyboard navigation focus styles for buff cards and options handled by browser
+
+  // Initial UI setup
+  updateUI();
+
+  // Public API: none - this is self contained
+
+})();
+</script>
+</body>
+</html>
+
