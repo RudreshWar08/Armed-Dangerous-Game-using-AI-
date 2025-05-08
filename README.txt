@@ -1,6 +1,6 @@
 # Armed and Dangerous 🎯
 
-*Armed and Dangerous* is a browser-based 2D shooting game built using pure HTML. Players control a weapon to shoot enemies appearing from the sides of the screen, aiming for a high score.
+*Armed and Dangerous* is a browser-based 2D shooting game built using pure HTML. Players control a weapon to shoot enemies appearing from the sides of the screen, aiming for a high score
 
 ## 🎮 Gameplay Overview
 
